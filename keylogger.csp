@@ -1,0 +1,19 @@
+.equ @, $0
+keyboard_status: .word $000
+keyboard_data: .word $001
+
+.equ @, $2
+LDX# $fff
+main:
+ADX# $001
+CMX# $00a
+JLT poll
+HLT
+
+poll:
+INB keyboard_status
+NOP
+JGE poll
+INB keyboard_data
+STA+ $d00
+JMP main
