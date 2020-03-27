@@ -1,69 +1,32 @@
 .equ @, $0
-;three chunks of words at 8B, 8C, 8D
 
 LDX# $fff
-LDS# $88 ;initialize stack at 0x88
-main:
-ADX# $001
-CMX# $9
-JGE check; prevent arithmetic errors
-JMP poll
-
-check:
-PSHX ;store index register - 9, will be at $87
-LDA# $d00 ;where keys are stored
-ADA $87 ;getting current locations previous 9 char location
-SBA# $9
-PSHA ;store the address on stack, will be at $86
-PSH# $8A ;target storage location, will be at $85
-LDF# $fff ;treating frame pointer as misc register
-loop1:
-INC $85
-ADF# $1
-CMF# $3 ;if equal to 3, jump to strcmp
-JEQ strcmp
-LDX# $fff
-loop2:
-ADX# $1
-CMX# $3 ;if equal, go back to loop1
-JEQ loop1
-LDA* $86 ;address
-INC $86 ;move down to next char
-STC* $85
-JMP loop2
-
-poll_jumper:
-POP $0
-POP $0
-POPX
-JMP poll
-
+prepoll:
+TSF ;restore frame pointer
 poll:
 INB $000 ;keyboard status
 NOP
 JGE poll
 INB $001 ;keyboard data
-STA+ $d00
-JMP main
+STA ! $d00
+ADF# 1
 
-strcmp:
-LDA $8B
-CMA $88
-JNE poll_jumper
-LDA $8C
-CMA $89
-JNE poll_jumper
-LDA $8D
-CMA $8A
-JNE poll_jumper
-LDA# $0
-LDX# $0
+check:
+LDX# strlen-1
+TFS
+loop: ;char by char comp is faster
+SBF# 1
+LDC trigger
+CMA ! $d00
+JNE prepoll
+SOJ loop
+;xr is fff if past strcmp so perfect setup for destroy
+
 destroy:
-STA+ $0
-ADX# $1
-CMX# $32
-JLE destroy
+AOC# halt-3 ;just so we can wipe one more instruction
+CLR+ $0
+JLT destroy
+halt:
 HLT
 
-.equ @, $88 ;technically not in code, but on stack :p
-trigger: .char 'get pwned'
+trigger: .char 'get pwned', strlen
