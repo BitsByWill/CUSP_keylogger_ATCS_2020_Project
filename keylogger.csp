@@ -1,6 +1,6 @@
 .equ @, $0
 
-LDX# $fff
+LDS# $0
 prepoll:
 TSF ;restore frame pointer
 poll:
